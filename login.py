@@ -1,15 +1,8 @@
 import tkinter as tk
 from tkinter import messagebox
-
+import config
+import dashboard
 import pyodbc
-
-connection_string = (
-    r'DRIVER={SQL Server};'
-    r'SERVER=DESKTOP-IST84F2\SQLEXPRESS;'
-    r'DATABASE=QLSVNhom;'
-    r'UID=sa;'
-    r'PWD=123456'
-)
 
 def login():
     username = entry_username.get()
@@ -18,9 +11,19 @@ def login():
     if not username or not password:
         messagebox.showerror("Error", "Please enter both username and password.")
         return
-
+    
+    if config.USE_MOCK:
+        user = config.MOCK_STAFF.get(username)
+        if user and user["MATKHAU"] == password:
+            messagebox.showinfo("Thành công", f"Đăng nhập MOCK thành công! Xin chào {user['HOTEN']}")
+            root.destroy()
+            dashboard.open(user["MANV"], password)
+        else:
+            messagebox.showerror("Lỗi", "Tên đăng nhập hoặc mật khẩu không đúng (Mock).")
+        return
+    
     try:
-        conn = pyodbc.connect(connection_string)
+        conn = get_connection()
         cursor = conn.cursor()
         sql = "EXEC SP_SEL_PUBLIC_NHANVIEN ?, ?"
         cursor.execute(sql, (username, password))
@@ -30,6 +33,8 @@ def login():
         if result[0] != None:
             print(result)
             messagebox.showinfo("Success", "Login successful!")
+            root.destroy()
+            dashboard.open(manv, password)
         else:
             messagebox.showerror("Error", "Invalid username or password.")
 
