@@ -1,29 +1,44 @@
 import tkinter as tk
-from tkinter import ttk
 import classManagement
 import studentManagement
 import scoreManagement
 
+class Dashboard(tk.Tk):
+    def __init__(self, manv, raw_password):
+        super().__init__()
+        self.title("Staff Dashboard")
+        self.geometry("800x600")
+        self.eval('tk::PlaceWindow . center')
+        self.manv = manv
+
+        # Header
+        header_frame = tk.Frame(self, bg="lightblue", height=40)
+        header_frame.pack(fill=tk.X)
+        tk.Label(header_frame, text=f"Staff ID: {manv}", bg="lightblue", font=("Arial", 10, "bold")).pack(pady=10)
+
+        # Container Frame to hold all panels
+        self.container = tk.Frame(self)
+        self.container.pack(fill=tk.BOTH, expand=True)
+
+        # Show initial panel
+        self.show_class_panel()
+
+    def clear_container(self):
+        for widget in self.container.winfo_children():
+            widget.destroy()
+
+    def show_class_panel(self):
+        self.clear_container()
+        classManagement.panel(self.container, self.manv, self)
+
+    def show_student_panel(self, malop):
+        self.clear_container()
+        studentManagement.panel(self.container, self.manv, malop, self)
+
+    def show_score_panel(self, malop):
+        self.clear_container()
+        scoreManagement.panel(self.container, self.manv, malop, self)
+
 def open(manv, raw_password):
-    dash = tk.Tk()
-    dash.title("Staff Dashboard")
-    dash.geometry("700x500")
-    dash.eval('tk::PlaceWindow . center')
-    
-    #Header
-    header_frame = tk.Frame(dash, bg="lightblue", height=40)
-    header_frame.pack(fill=tk.X)
-    tk.Label(header_frame, text=f"Staff ID: {manv}", bg="lightblue").pack(pady=10)
-    
-    notebook = ttk.Notebook(dash)
-    notebook.pack(fill=tk.BOTH, expand=True, padx=10, pady=10)
-
-    tab_class = classManagement.panel(notebook, manv)
-    tab_std =  studentManagement.panel(notebook, manv)
-    tab_score = scoreManagement.panel(notebook, manv)
-    
-    notebook.add(tab_class, text = "1. Class Management")
-    notebook.add(tab_std, text = "2. Student Management")
-    notebook.add(tab_score, text = "3. Score Management")
-
-    dash.mainloop()
+    app = Dashboard(manv, raw_password)
+    app.mainloop()
