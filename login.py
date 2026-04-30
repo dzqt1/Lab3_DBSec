@@ -15,11 +15,11 @@ def login():
     if config.USE_MOCK:
         user = config.MOCK_STAFF.get(username)
         if user and user["MATKHAU"] == password:
-            messagebox.showinfo("Thành công", f"Đăng nhập MOCK thành công! Xin chào {user['HOTEN']}")
+            messagebox.showinfo("Success", "Login successful!")
             root.destroy()
             dashboard.open(user["MANV"], password)
         else:
-            messagebox.showerror("Lỗi", "Tên đăng nhập hoặc mật khẩu không đúng (Mock).")
+            messagebox.showerror("Error", "Invalid username or password.")
         return
     
     try:
