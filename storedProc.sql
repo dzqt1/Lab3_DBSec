@@ -103,3 +103,82 @@ begin
 	from SINHVIEN sv
 	where sv.MALOP = @MALOP
 end
+
+-- 4. SP add student
+create procedure SP_INS_SINHVIEN
+    @MASV varchar(20),
+    @HOTEN nvarchar(100),
+    @NGAYSINH datetime,
+    @DIACHI nvarchar(200),
+    @MALOP varchar(20),
+    @TENDN varchar(100),
+    @MK varchar(20)
+with encryption
+as
+begin
+    begin try
+
+        -- hash mk --
+        declare @MK_HASHED varbinary(MAX) = HASHBYTES('SHA1', @MK);
+
+        -- insert data --
+        insert into SINHVIEN (MASV, HOTEN, NGAYSINH, DIACHI, MALOP, TENDN, MATKHAU)
+        values (@MASV, @HOTEN, @NGAYSINH, @DIACHI, @MALOP, @TENDN, @MK_HASHED);
+
+        print 'Insert to SINHVIEN successfully'
+
+    end try
+    begin catch
+
+        declare @ERROR nvarchar(4000) = ERROR_MESSAGE();
+        print 'Error: ' + @ERROR;
+
+    end catch
+end
+
+-- 5. SP delete student
+create procedure SP_DEL_SINHVIEN
+	@MASV varchar(20)
+with encryption
+as
+begin
+	begin try
+
+		delete from SINHVIEN where MASV = @MASV;
+
+		print 'Delete student successfully'
+
+	end try
+	begin catch
+
+		declare @ERROR nvarchar(4000) = ERROR_MESSAGE();
+		print 'Error: ' + @ERROR;
+
+	end catch
+end
+
+-- 6. SP update student
+create procedure SP_UPD_SINHVIEN
+	@MASV varchar(20),
+	@HOTEN nvarchar(100),
+	@NGAYSINH datetime,
+	@DIACHI nvarchar(200)
+with encryption
+as
+begin
+	begin try
+
+		update SINHVIEN 
+		set HOTEN = @HOTEN, NGAYSINH = @NGAYSINH, DIACHI = @DIACHI
+		where MASV = @MASV;
+
+		print 'Update student successfully'
+
+	end try
+	begin catch
+
+		declare @ERROR nvarchar(4000) = ERROR_MESSAGE();
+		print 'Error: ' + @ERROR;
+
+	end catch
+end

@@ -7,7 +7,7 @@ class Dashboard(tk.Tk):
     def __init__(self, manv, raw_password):
         super().__init__()
         self.title("Staff Dashboard")
-        self.geometry("800x600")
+        self.geometry("1000x600")
         self.eval('tk::PlaceWindow . center')
         self.manv = manv
 
