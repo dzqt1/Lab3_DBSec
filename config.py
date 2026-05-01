@@ -1,3 +1,5 @@
+import pyodbc
+
 CONNECTION_STRING = (
     r'DRIVER={SQL Server};'
     r'SERVER=DESKTOP-IST84F2\SQLEXPRESS;'

@@ -1,12 +1,13 @@
 import tkinter as tk
 from tkinter import ttk, messagebox
 import config
+import pyodbc
 
 def panel(parent, manv, app_controller):
     frame = tk.Frame(parent)
     frame.pack(fill=tk.BOTH, expand=True)
 
-    tk.Label(frame, text="Your Assigned Classes", font=("Arial", 14, "bold")).pack(pady=10)
+    tk.Label(frame, text="Your Classes", font=("Arial", 14, "bold")).pack(pady=10)
 
     tree = ttk.Treeview(frame, columns=("MALOP", "TENLOP"), show='headings')
     tree.heading("MALOP", text="Class ID")

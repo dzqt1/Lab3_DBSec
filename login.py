@@ -25,13 +25,12 @@ def login():
     try:
         conn = config.get_connection()
         cursor = conn.cursor()
-        
-        sql = "EXEC SP_LOGIN_NHANVIEN ?, ?"
+        sql = "EXEC SP_SEL_PUBLIC_NHANVIEN ?, ?"
         cursor.execute(sql, (username, password))
 
         result = cursor.fetchone()
 
-        if result:
+        if result[0] != None:
             manv = result[0]
             messagebox.showinfo("Success", "Login successful!")
             root.destroy()
