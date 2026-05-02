@@ -1,96 +1,138 @@
-USE QLSVNhom
+USE QLSVNhom;
 GO
 
--- C. --
+-- C. Cấu hình mức độ tương thích để dùng RSA_512
+ALTER DATABASE QLSVNhom SET COMPATIBILITY_LEVEL = 120;
+GO
 
--- decrease compatibility_level to use RSA_512 --
-alter database QLSVNhom set compatibility_level = 120;
+-- 1. SP Chèn nhân viên có mã hóa lương bằng RSA
+CREATE OR ALTER PROCEDURE SP_INS_PUBLIC_NHANVIEN
+    @MANV varchar(20),
+    @HOTEN nvarchar(100),
+    @EMAIL varchar(20),
+    @LUONGCB int,
+    @TENDN varchar(100),
+    @MK varchar(20)
+WITH ENCRYPTION
+AS
+BEGIN
+    BEGIN TRY
+        -- Hash mật khẩu
+        DECLARE @MK_HASHED varbinary(MAX) = HASHBYTES('SHA1', @MK);
 
--- 1. insert nv --
-create procedure SP_INS_PUBLIC_NHANVIEN
-	@MANV varchar(20),
-	@HOTEN nvarchar(100),
-	@EMAIL varchar(20),
-	@LUONGCB int,
-	@TENDN varchar(100),
-	@MK varchar(20)
-with encryption
-as
-begin
-	begin try
+        -- Tạo Asymmetric Key động cho từng nhân viên
+        DECLARE @CreateKeySQL nvarchar(MAX) = '
+            IF EXISTS (SELECT * FROM sys.asymmetric_keys WHERE name = ''' + @MANV + ''')
+            BEGIN
+                DROP ASYMMETRIC KEY ' + QUOTENAME(@MANV) + '
+            END
+            CREATE ASYMMETRIC KEY ' + QUOTENAME(@MANV) + '
+            WITH ALGORITHM = RSA_512
+            ENCRYPTION BY PASSWORD = N''' + @MK + ''';';
+        
+        EXEC sp_executesql @CreateKeySQL;
 
-		-- hash mk --
-		declare @MK_HASHED varbinary(MAX) = HASHBYTES('SHA1', @MK);
+        -- Mã hóa lương
+        DECLARE @LUONG varbinary(MAX) = ENCRYPTBYASYMKEY(ASYMKEY_ID(@MANV), CONVERT(varchar(50), @LUONGCB));
 
-		-- encrypt luong --
-		declare @CreateKeySQL nvarchar(MAX) = '
-			if exists (select * from sys.asymmetric_keys where name = ''' + @MANV + ''' )
-			begin
-				drop asymmetric key ' + QUOTENAME(@MANV) + '
-			end
-			create asymmetric key ' + QUOTENAME(@MANV) + '
-			with ALGORITHM = RSA_512
-			encryption by password = N''' + @MK + ''';
-		';
-		exec sp_executesql @CreateKeySQL
-		declare @LUONG varbinary(MAX) = ENCRYPTBYASYMKEY(ASYMKEY_ID(@MANV), CONVERT(varchar(50), @LUONGCB));
+        -- Insert dữ liệu
+        INSERT INTO NHANVIEN (MANV, HOTEN, EMAIL, LUONG, TENDN, MATKHAU, PUBKEY)
+        VALUES (@MANV, @HOTEN, @EMAIL, @LUONG, @TENDN, @MK_HASHED, @MANV);
 
-		-- insert data --
-		insert into NHANVIEN (MANV, HOTEN, EMAIL, LUONG, TENDN, MATKHAU, PUBKEY)
-		values (@MANV, @HOTEN, @EMAIL, @LUONG, @TENDN, @MK_HASHED, @MANV);
+        PRINT 'Insert to NHANVIEN successfully';
+    END TRY
+    BEGIN CATCH
+        DECLARE @ERROR nvarchar(4000) = ERROR_MESSAGE();
+        PRINT 'Error: ' + @ERROR;
+    END CATCH
+END;
+GO
 
-		print 'Insert to NHANVIEN successfully'
+-- 2. SP Lấy thông tin nhân viên (Giải mã lương)
+CREATE OR ALTER PROCEDURE SP_SEL_PUBLIC_NHANVIEN
+    @TENDN varchar(20),
+    @MK varchar(20)
+WITH ENCRYPTION
+AS
+BEGIN
+    DECLARE @MK_Hashed_Login varbinary(MAX) = HASHBYTES('SHA1', @MK);
+    
+    SELECT nv.MANV, nv.HOTEN, nv.EMAIL,
+           CAST(
+                CONVERT(varchar(50), 
+                    DECRYPTBYASYMKEY(ASYMKEY_ID(nv.MANV), nv.LUONG, CONVERT(nvarchar(50), @MK))
+                )
+           AS int) AS LUONGCB
+    FROM NHANVIEN nv
+    WHERE nv.TENDN = @TENDN AND nv.MATKHAU = @MK_Hashed_Login;
+END;
+GO
 
-	end try
-	begin catch
-
-		declare @ERROR nvarchar(4000) = ERROR_MESSAGE();
-		print 'Error: ' + @ERROR;
-
-	end catch
-end
-
--- 2. select nv --
-create procedure SP_SEL_PUBLIC_NHANVIEN
-	@TENDN varchar(20),
-	@MK varchar(20)
-with encryption
-as
-begin
-	declare @MK_Hashed varbinary(MAX) = HASHBYTES('SHA1', @MK);
-	select nv.MANV, nv.HOTEN, nv.EMAIL,
-		   CAST (
-				CONVERT(varchar(50), 
-					DECRYPTBYASYMKEY(ASYMKEY_ID(nv.MANV), nv.LUONG, CONVERT(nvarchar(50), @MK))
-				)
-		   as int) as LUONGCB
-	from NHANVIEN nv
-	where nv.TENDN = @TENDN and nv.MATKHAU = @MK_Hashed
-end
-
--- D. --
-
--- 1. SP Login
-CREATE PROCEDURE SP_LOGIN_NHANVIEN
+-- D. 1. SP Login
+CREATE OR ALTER PROCEDURE SP_LOGIN_NHANVIEN
     @MANV VARCHAR(20),
     @MATKHAU VARCHAR(100) 
 AS
 BEGIN
     SELECT MANV, HOTEN 
     FROM NHANVIEN 
-    WHERE MANV = @MANV AND MATKHAU = HASHBYTES('SHA1', CONVERT(VARCHAR, @MATKHAU))
-END
+    WHERE MANV = @MANV AND MATKHAU = HASHBYTES('SHA1', CONVERT(VARCHAR, @MATKHAU));
+END;
 GO
 
--- 2. SP select class
+-- 2. SP Select Class
 CREATE PROCEDURE SP_SEL_LOP_BY_NV
     @MANV VARCHAR(20)
 AS
 BEGIN
     SELECT l.MALOP, l.TENLOP
     FROM LOP l 
-    WHERE l.MANV = @MANV
-END
+    WHERE l.MANV = @MANV;
+END;
+GO
+
+CREATE PROCEDURE SP_SEL_LOP_OTHER
+    @MANV VARCHAR(20)
+WITH ENCRYPTION
+AS
+BEGIN
+    SELECT MALOP, TENLOP 
+    FROM LOP 
+    WHERE MANV IS NULL OR MANV != @MANV;
+END;
+GO
+
+CREATE OR ALTER PROCEDURE SP_ASSIGN_LOP
+    @MANV VARCHAR(20),
+    @MALOP VARCHAR(20)
+WITH ENCRYPTION
+AS
+BEGIN
+    UPDATE LOP 
+    SET MANV = @MANV 
+    WHERE MALOP = @MALOP;
+END;
+GO
+
+CREATE OR ALTER PROCEDURE SP_UNASSIGN_LOP
+    @MALOP VARCHAR(20)
+WITH ENCRYPTION
+AS
+BEGIN
+    UPDATE LOP 
+    SET MANV = NULL 
+    WHERE MALOP = @MALOP;
+END;
+GO
+
+CREATE PROCEDURE SP_DEL_LOP
+    @MALOP VARCHAR(20)
+WITH ENCRYPTION
+AS
+BEGIN
+    DELETE FROM LOP 
+    WHERE MALOP = @MALOP;
+END;
 GO
 
 -- 3. SP select student
@@ -102,7 +144,10 @@ begin
 	select sv.MASV, sv.HOTEN, sv.NGAYSINH, sv.DIACHI
 	from SINHVIEN sv
 	where sv.MALOP = @MALOP
-end
+end;
+go
+
+
 
 -- 4. SP add student
 create procedure SP_INS_SINHVIEN
@@ -134,7 +179,8 @@ begin
         print 'Error: ' + @ERROR;
 
     end catch
-end
+end;
+go
 
 -- 5. SP delete student
 create procedure SP_DEL_SINHVIEN
@@ -155,7 +201,8 @@ begin
 		print 'Error: ' + @ERROR;
 
 	end catch
-end
+end;
+go
 
 -- 6. SP update student
 create procedure SP_UPD_SINHVIEN
@@ -181,4 +228,6 @@ begin
 		print 'Error: ' + @ERROR;
 
 	end catch
-end
+end;
+go
+
