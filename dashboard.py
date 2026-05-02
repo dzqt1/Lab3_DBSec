@@ -1,7 +1,7 @@
 import tkinter as tk
 import classManagement
+import gradeManagement
 import studentManagement
-#import scoreManagement
 
 class Dashboard(tk.Tk):
     def __init__(self, manv, raw_password):
@@ -35,9 +35,9 @@ class Dashboard(tk.Tk):
         self.clear_container()
         studentManagement.panel(self.container, self.manv, malop, self)
 
-    #def show_score_panel(self, malop):
-    #    self.clear_container()
-    #    scoreManagement.panel(self.container, self.manv, malop, self)
+    def show_grade_panel(self, masv, malop):
+        self.clear_container()
+        gradeManagement.panel(self.container, self.manv, masv, malop, self)
 
 def open(manv, raw_password):
     app = Dashboard(manv, raw_password)

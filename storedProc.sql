@@ -272,3 +272,12 @@ begin
 	from BANGDIEM
 	where MASV = @MASV
 end;
+
+-- 9. SP select subject
+create procedure SP_SEL_HOCPHAN
+	@MASV varchar(20)
+with encryption
+as
+begin
+	select MAHP, TENHP from HOCPHAN
+end;

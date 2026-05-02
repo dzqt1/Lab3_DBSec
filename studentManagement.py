@@ -17,15 +17,22 @@ def panel(parent, manv, malop, app_controller):
     tree.heading("DIACHI", text="Address")
     tree.pack(fill=tk.BOTH, expand=True, padx=20, pady=10)
 
-    button_frame = tk.Frame(frame)
-    button_frame.pack(pady=15)
-    tk.Button(button_frame, text="Back to Classes", command=app_controller.show_class_panel, width=20, bg="#e0e0e0").pack(side=tk.LEFT, padx=15)
+    button_frame1 = tk.Frame(frame)
+    button_frame1.pack(pady=5)
+
+    button_frame2 = tk.Frame(frame)
+    button_frame2.pack(pady=15)
+
+    tk.Button(button_frame1, text="Add Student", command=lambda: add_student(tree), width=20, bg="#e0e0e0", fg="green").pack(side=tk.LEFT, padx=5)
+    tk.Button(button_frame1, text="Remove Student", command=lambda: remove_student(tree), width=20, bg="#e0e0e0", fg="red").pack(side=tk.LEFT, padx=5)
+    tk.Button(button_frame1, text="Update Student", command=lambda: update_student(tree), width=20, bg="#e0e0e0").pack(side=tk.LEFT, padx=5)
     
-    tk.Button(button_frame, text="Add Student", command=lambda: add_student(tree), width=20, bg="#e0e0e0").pack(side=tk.LEFT, padx=15)
-    tk.Button(button_frame, text="Remove Student", command=lambda: remove_student(tree), width=20, bg="#e0e0e0").pack(side=tk.LEFT, padx=15)
-    tk.Button(button_frame, text="Update Student", command=lambda: update_student(tree), width=20, bg="#e0e0e0").pack(side=tk.LEFT, padx=15)
-    tk.Button(button_frame, text="Refresh List", command=lambda: refresh_student_list(tree), width=20, bg="#e0e0e0").pack(side=tk.LEFT, padx=15)
-    
+    tk.Button(button_frame2, text="Back to Classes", command=app_controller.show_class_panel, width=20, bg="#e0e0e0").pack(side=tk.LEFT, padx=5)
+    tk.Button(button_frame2, text="Refresh List", command=lambda: refresh_student_list(tree), width=20, bg="#e0e0e0").pack(side=tk.LEFT, padx=5)
+    tk.Button(button_frame2, text="Enter Grades", command=lambda: show_grade_panel(tree, app_controller), width=20, bg="#dff0d8").pack(side=tk.LEFT, padx=5)
+
+
+
     fetch_students(tree)
 
 def add_student(tree):
@@ -199,3 +206,12 @@ def refresh_student_list(tree):
     for item in tree.get_children():
         tree.delete(item)
     fetch_students(tree)
+
+def show_grade_panel(tree, app_controller):
+    selected_item = tree.selection()
+    if not selected_item:
+        messagebox.showerror("Selection error", "Please select a student to manage grades.")
+        return
+
+    masv = tree.item(selected_item[0])['values'][0]
+    app_controller.show_grade_panel(masv, _malop)

@@ -202,7 +202,6 @@ def panel(parent, manv, app_controller):
 
     tk.Button(btn_frame_my, text="Unassign", command=remove_from_management, width=15).grid(row=1, column=0, padx=5, pady=5)
     tk.Button(btn_frame_my, text="Delete from DB", command=delete_class_db, width=15, fg="red").grid(row=1, column=1, padx=5, pady=5)
-    tk.Button(btn_frame_my, text="Enter Grades", command=go_enter_scores, width=15, bg="#dff0d8").grid(row=1, column=2, padx=5, pady=5)
 
     # 2. Bảng nút cho "Other Classes"
     btn_frame_other = tk.Frame(right_frame)
