@@ -231,3 +231,44 @@ begin
 end;
 go
 
+-- 7. SP insert score
+create procedure SP_INS_DIEM
+	@MASV varchar(20),
+	@MONHOC varchar(50),
+	@DIEM float,
+	@PUBKEY varchar(20)
+with encryption
+as
+begin
+	begin try
+		declare @DIEM_ENCRYPTED varbinary(MAX) = ENCRYPTBYASYMKEY(ASYMKEY_ID(@PUBKEY), CONVERT(varchar(50), @DIEM));
+		insert into BANGDIEM (MASV, MAHP, DIEMTHI) values (@MASV, @MONHOC, @DIEM_ENCRYPTED);
+
+		print 'Insert score successfully'
+
+	end try
+	begin catch
+
+		declare @ERROR nvarchar(4000) = ERROR_MESSAGE();
+		print 'Error: ' + @ERROR;
+
+	end catch
+end;
+
+-- 8. SP select score
+create procedure SP_SEL_DIEM_BY_SV
+	@MASV varchar(20),
+	@PUBKEY varchar(20),
+	@MK nvarchar(50)
+with encryption
+as
+begin
+	select MAHP, 
+	CAST(
+		CONVERT(varchar(50), 
+			DECRYPTBYASYMKEY(ASYMKEY_ID(@PUBKEY), DIEMTHI, @MK)
+		)
+	AS float) AS DIEMTHI
+	from BANGDIEM
+	where MASV = @MASV
+end;
