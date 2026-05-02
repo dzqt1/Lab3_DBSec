@@ -10,6 +10,7 @@ class Dashboard(tk.Tk):
         self.geometry("1000x600")
         self.eval('tk::PlaceWindow . center')
         self.manv = manv
+        self.raw_password = raw_password
 
         # Header
         header_frame = tk.Frame(self, bg="lightblue", height=40)
@@ -37,7 +38,7 @@ class Dashboard(tk.Tk):
 
     def show_grade_panel(self, masv, malop):
         self.clear_container()
-        gradeManagement.panel(self.container, self.manv, masv, malop, self)
+        gradeManagement.panel(self.container, self.manv, masv, malop, self, self.raw_password)
 
 def open(manv, raw_password):
     app = Dashboard(manv, raw_password)
