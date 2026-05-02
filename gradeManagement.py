@@ -3,13 +3,16 @@ from tkinter import ttk, messagebox, simpledialog
 import config
 import pyodbc
 
-def panel(parent, manv, masv, malop, app_controller):
+def panel(parent, manv, masv, malop, app_controller, raw_password):
     frame = tk.Frame(parent)
     frame.pack(fill=tk.BOTH, expand=True)
     global _masv
     _masv = masv
     global _manv
     _manv = manv
+    global _password
+    _password = raw_password
+
     tk.Label(frame, text=f"Grades for Student {_masv}", font=("Arial", 14, "bold")).pack(pady=10)
 
     tree = ttk.Treeview(frame, columns=("MAMH", "TENMH", "DIEM"), show='headings')
@@ -46,11 +49,14 @@ def fetch_subjects(tree):
     try:
         conn = pyodbc.connect(config.CONNECTION_STRING)
         cursor = conn.cursor()
-        cursor.execute("EXEC SP_SEL_HOCPHAN")
+        print(_password)
+        cursor.execute("EXEC SP_SEL_DIEM_BY_SV ?, ?, ?", (_masv, _manv, _password))
+        
         rows = cursor.fetchall()
         tree.delete(*tree.get_children())
         for row in rows:
-            tree.insert("", tk.END, values=(row[0], row[1], ""))
+            tree.insert("", tk.END, values=(row[0], row[1], row[2]))
+            
     except Exception as e:
         messagebox.showerror("Error", f"Failed to fetch subjects: {e}")
     finally:

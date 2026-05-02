@@ -2,6 +2,7 @@ import tkinter as tk
 from tkinter import ttk, messagebox, simpledialog
 import config
 import pyodbc   
+from datetime import datetime
 
 def panel(parent, manv, malop, app_controller):
     frame = tk.Frame(parent)
@@ -55,7 +56,7 @@ def add_student(tree):
     student_name_entry = tk.Entry(grid_frame, width=25)
     student_name_entry.grid(row=1, column=1, padx=10, pady=10)
 
-    tk.Label(grid_frame, text="Date of Birth:").grid(row=2, column=0, padx=10, pady=10)
+    tk.Label(grid_frame, text="Date of Birth (dd/mm/yyyy):").grid(row=2, column=0, padx=10, pady=10)
     student_dob_entry = tk.Entry(grid_frame, width=25)
     student_dob_entry.grid(row=2, column=1, padx=10, pady=10)
 
@@ -66,13 +67,19 @@ def add_student(tree):
     def on_submit():
         student_id = student_id_entry.get().strip()
         student_name = student_name_entry.get().strip()
-        student_dob = student_dob_entry.get().strip()
+        student_dob_raw = student_dob_entry.get().strip()
         student_address = student_address_entry.get().strip()
 
-        if not all([student_id, student_name, student_dob, student_address]):
+        if not all([student_id, student_name, student_dob_raw, student_address]):
             messagebox.showerror("Input error", "All fields are required.")
             return
-
+        
+        try:
+            dob_object = datetime.strptime(student_dob_raw, "%d/%m/%Y")
+            student_dob = dob_object.strftime("%Y-%m-%d") # convert to ISO standard
+        except ValueError:
+            messagebox.showerror("Format Error", "Date of Birth must be in format: DD/MM/YYYY")
+            return
         try:
             conn = config.get_connection()
             cursor = conn.cursor()
