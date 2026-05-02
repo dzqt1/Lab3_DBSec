@@ -8,7 +8,7 @@ CONNECTION_STRING = (
     r'PWD=123'
 )
 
-USE_MOCK = True
+USE_MOCK = False
 # ================= MOCK DATA =================
 MOCK_STAFF = {
     "NVA": {"MATKHAU": "123", "MANV": "NV01", "TENDN": "Nguyễn Văn A"},
