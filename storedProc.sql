@@ -1,6 +1,6 @@
 USE QLSVNhom;
 GO
-
+-------------------------------------------------------------
 -- C. Cấu hình mức độ tương thích để dùng RSA_512
 ALTER DATABASE QLSVNhom SET COMPATIBILITY_LEVEL = 120;
 GO
@@ -67,20 +67,14 @@ BEGIN
     WHERE nv.TENDN = @TENDN AND nv.MATKHAU = @MK_Hashed_Login;
 END;
 GO
+-------------------------------------------------------------
 
--- D. 1. SP Login
-CREATE OR ALTER PROCEDURE SP_LOGIN_NHANVIEN
-    @MANV VARCHAR(20),
-    @MATKHAU VARCHAR(100) 
-AS
-BEGIN
-    SELECT MANV, HOTEN 
-    FROM NHANVIEN 
-    WHERE MANV = @MANV AND MATKHAU = HASHBYTES('SHA1', CONVERT(VARCHAR, @MATKHAU));
-END;
-GO
+-------------------------------------------------------------
+-- D. 
+--1. SP Login
+-- Sử dụng SP của 3.1
 
--- 2. SP Select Class
+-- 2.1 SP chọn lớp do nhân viên đó quản lý
 CREATE PROCEDURE SP_SEL_LOP_BY_NV
     @MANV VARCHAR(20)
 AS
@@ -91,6 +85,7 @@ BEGIN
 END;
 GO
 
+--2.2 SP chọn lớp không thuộc quản lý của nhân viên đó
 CREATE PROCEDURE SP_SEL_LOP_OTHER
     @MANV VARCHAR(20)
 WITH ENCRYPTION
@@ -102,7 +97,8 @@ BEGIN
 END;
 GO
 
-CREATE OR ALTER PROCEDURE SP_ASSIGN_LOP
+--2.3 SP đăng ký lớp cho nhân viên đó quản lý
+CREATE PROCEDURE SP_ASSIGN_LOP
     @MANV VARCHAR(20),
     @MALOP VARCHAR(20)
 WITH ENCRYPTION
@@ -114,7 +110,8 @@ BEGIN
 END;
 GO
 
-CREATE OR ALTER PROCEDURE SP_UNASSIGN_LOP
+--2.4 SP Hủy đăng ký lớp cho nhân viên đang quản lý lớp đó
+CREATE PROCEDURE SP_UNASSIGN_LOP
     @MALOP VARCHAR(20)
 WITH ENCRYPTION
 AS
@@ -124,7 +121,20 @@ BEGIN
     WHERE MALOP = @MALOP;
 END;
 GO
+--2.5 SP update thông tin 1 lớp
+CREATE OR ALTER PROCEDURE SP_UPD_LOP
+    @MALOP VARCHAR(20),
+    @TENLOP NVARCHAR(100)
+WITH ENCRYPTION
+AS
+BEGIN
+    UPDATE LOP 
+    SET TENLOP = @TENLOP 
+    WHERE MALOP = @MALOP;
+END;
+GO
 
+--2.5 SP xóa 1 lớp khỏi CSDL
 CREATE PROCEDURE SP_DEL_LOP
     @MALOP VARCHAR(20)
 WITH ENCRYPTION
@@ -135,7 +145,7 @@ BEGIN
 END;
 GO
 
--- 3. SP select student
+-- 3.1 SP lọc sinh viên theo lớp
 create procedure SP_SEL_SV_BY_LOP
 	@MALOP varchar(20)
 with encryption
@@ -147,9 +157,7 @@ begin
 end;
 go
 
-
-
--- 4. SP add student
+-- 3.2 SP thêm sinh viên mới vào CSDL
 create procedure SP_INS_SINHVIEN
     @MASV varchar(20),
     @HOTEN nvarchar(100),
@@ -182,7 +190,7 @@ begin
 end;
 go
 
--- 5. SP delete student
+-- 3.3 SP xóa sinh viên khỏi CSDL
 create procedure SP_DEL_SINHVIEN
 	@MASV varchar(20)
 with encryption
@@ -204,7 +212,7 @@ begin
 end;
 go
 
--- 6. SP update student
+-- 3.4 SP chỉnh sửa thông tin sinh viên trong CSDL
 create procedure SP_UPD_SINHVIEN
 	@MASV varchar(20),
 	@HOTEN nvarchar(100),
@@ -231,49 +239,52 @@ begin
 end;
 go
 
--- 7. SP insert score
-create procedure SP_INS_DIEM
-	@MASV varchar(20),
-	@MONHOC varchar(50),
-	@DIEM float,
-	@PUBKEY varchar(20)
-with encryption
-as
-begin
-	begin try
-		declare @DIEM_ENCRYPTED varbinary(MAX) = ENCRYPTBYASYMKEY(ASYMKEY_ID(@PUBKEY), CONVERT(varchar(50), @DIEM));
-		insert into BANGDIEM (MASV, MAHP, DIEMTHI) values (@MASV, @MONHOC, @DIEM_ENCRYPTED);
+-- 4.1 SP nhập/sửa điểm cho sinh viên
+CREATE OR ALTER PROCEDURE SP_INS_DIEM 
+    @MASV varchar(20), 
+    @MONHOC varchar(50), 
+    @DIEM float, 
+    @PUBKEY varchar(20) 
+AS
+BEGIN
+    BEGIN TRY
+        DECLARE @DIEM_ENCRYPTED varbinary(MAX) = ENCRYPTBYASYMKEY(ASYMKEY_ID(@PUBKEY), CONVERT(varchar(50), @DIEM));
+        
+        IF EXISTS (SELECT 1 FROM BANGDIEM WHERE MASV = @MASV AND MAHP = @MONHOC)
+        BEGIN
+            UPDATE BANGDIEM SET DIEMTHI = @DIEM_ENCRYPTED 
+            WHERE MASV = @MASV AND MAHP = @MONHOC;
+        END
+        ELSE
+        BEGIN
+            INSERT INTO BANGDIEM (MASV, MAHP, DIEMTHI) VALUES (@MASV, @MONHOC, @DIEM_ENCRYPTED);
+        END
+    END TRY
+    BEGIN CATCH
+        THROW;
+    END CATCH
+END;
+GO
 
-		print 'Insert score successfully'
+-- 4.2 SP lọc lấy điểm của 1 sinh viên
+CREATE OR ALTER PROCEDURE SP_SEL_DIEM_BY_SV
+    @MASV varchar(20),
+    @PUBKEY varchar(20),
+    @MK nvarchar(50)
+WITH ENCRYPTION
+AS
+BEGIN
+    SELECT 
+        hp.MAHP, 
+        hp.TENHP,
+        -- Giải mã điểm, nếu NULL (chưa có điểm) thì trả về chuỗi rỗng
+        ISNULL(CAST(CONVERT(varchar(50), DECRYPTBYASYMKEY(ASYMKEY_ID(@PUBKEY), bd.DIEMTHI, @MK)) AS varchar), '') AS DIEMTHI
+    FROM HOCPHAN hp
+    LEFT JOIN BANGDIEM bd ON hp.MAHP = bd.MAHP AND bd.MASV = @MASV
+END;
+GO
 
-	end try
-	begin catch
-
-		declare @ERROR nvarchar(4000) = ERROR_MESSAGE();
-		print 'Error: ' + @ERROR;
-
-	end catch
-end;
-
--- 8. SP select score
-create procedure SP_SEL_DIEM_BY_SV
-	@MASV varchar(20),
-	@PUBKEY varchar(20),
-	@MK nvarchar(50)
-with encryption
-as
-begin
-	select MAHP, 
-	CAST(
-		CONVERT(varchar(50), 
-			DECRYPTBYASYMKEY(ASYMKEY_ID(@PUBKEY), DIEMTHI, @MK)
-		)
-	AS float) AS DIEMTHI
-	from BANGDIEM
-	where MASV = @MASV
-end;
-
--- 9. SP select subject
+-- 4.3 SP chọn học phần của 1 sinh viên đang học
 create procedure SP_SEL_HOCPHAN
 	@MASV varchar(20)
 with encryption
@@ -281,3 +292,4 @@ as
 begin
 	select MAHP, TENHP from HOCPHAN
 end;
+go

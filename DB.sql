@@ -53,10 +53,21 @@ DELETE FROM LOP;
 DELETE FROM NHANVIEN;
 GO
 -- 1. Sample Data NHANVIEN
-INSERT INTO NHANVIEN (MANV, HOTEN, EMAIL, LUONG, TENDN, MATKHAU, PUBKEY)
-VALUES
-('NV01', N'Nguyễn Văn A', 'nva@hcmus.edu.vn', CONVERT(VARBINARY, '3000000'), 'nva', HASHBYTES('SHA1', 'abcd12'), 'NV01'),
-('NV02', N'Trần Thị B', 'ttb@hcmus.edu.vn', CONVERT(VARBINARY, '4000000'), 'ttb', HASHBYTES('SHA1', 'abcd12'), 'NV02');
+EXEC SP_INS_PUBLIC_NHANVIEN 
+    @MANV = 'NV01', 
+    @HOTEN = N'Nguyễn A', 
+    @EMAIL = 'nva@hcmus.edu.vn', 
+    @LUONGCB = 3000000, 
+    @TENDN = 'nva', 
+    @MK = 'abcd12';
+
+EXEC SP_INS_PUBLIC_NHANVIEN 
+    @MANV = 'NV02', 
+    @HOTEN = N'Trần Thị B', 
+    @EMAIL = 'ttb@hcmus.edu.vn', 
+    @LUONGCB = 4000000, 
+    @TENDN = 'ttb', 
+    @MK = 'abcd12';
 GO
 
 -- 2. Sample Data LOP
@@ -80,13 +91,4 @@ VALUES
 ('HP01', N'An toàn cơ sở dữ liệu', 4),
 ('HP02', N'Hệ điều hành', 4),
 ('HP03', N'Lập trình Java', 3);
-GO
-
--- 5. Sample Data BANGDIEM
-INSERT INTO BANGDIEM (MASV, MAHP, DIEMTHI)
-VALUES
-('SV01', 'HP01', CONVERT(VARBINARY, '8.5')),
-('SV01', 'HP02', CONVERT(VARBINARY, '9.0')),
-('SV02', 'HP01', CONVERT(VARBINARY, '7.0')),
-('SV03', 'HP03', CONVERT(VARBINARY, '8.0'));
 GO
