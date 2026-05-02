@@ -4,8 +4,8 @@ CONNECTION_STRING = (
     r'DRIVER={SQL Server};'
     r'SERVER=DESKTOP-IST84F2\SQLEXPRESS;'
     r'DATABASE=QLSVNhom;'
-    r'UID=sa;'
-    r'PWD=123456'
+    r'UID=qlsv;'
+    r'PWD=123'
 )
 
 USE_MOCK = True

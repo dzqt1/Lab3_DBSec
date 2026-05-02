@@ -90,3 +90,13 @@ VALUES
 ('SV02', 'HP01', CONVERT(VARBINARY, '7.0')),
 ('SV03', 'HP03', CONVERT(VARBINARY, '8.0'));
 GO
+
+-- Tạo và cấp quyền user để sử dụng trong ứng dụng Python --
+use master
+go
+create login qlsv with password = '123'
+
+use QLSVNhom
+go
+create user qlsv for login qlsv
+alter role db_owner add member qlsv
