@@ -293,3 +293,73 @@ begin
 	select MAHP, TENHP from HOCPHAN
 end;
 go
+
+-- ** Lab 4 ** --
+-- c. --
+create procedure SP_INS_PUBLIC_ENCRYPT_NHANVIEN
+    @MANV varchar(20),
+    @HOTEN nvarchar(100),
+    @EMAIL varchar(20),
+    @LUONGCB varbinary(MAX),
+    @TENDN varchar(100),
+    @MK varbinary(MAX),
+    @PUB varchar(20)
+with encryption
+as
+begin
+    insert into NHANVIEN (MANV, HOTEN, EMAIL, LUONG, TENDN, MATKHAU, PUBKEY)
+    values (@MANV, @HOTEN, @EMAIL, @LUONGCB, @TENDN, @MK, @PUB);
+end;
+go
+
+create procedure SP_SEL_PUBLIC_ENCRYPT_NHANVIEN
+    @TENDN varchar(20),
+    @MK varchar(MAX)
+with encryption
+as
+begin
+    declare @MK_hashed varbinary(MAX) = HASHBYTES('SHA1', @MK);
+    select MANV, HOTEN, EMAIL, LUONG, PUBKEY
+    from NHANVIEN
+    where TENDN = @TENDN and MATKHAU = @MK_hashed;
+end;
+go
+
+-- d. --
+create procedure SP_SEL_PUBLIC_ENCRYPT_NHANVIEN_BY_MANV
+    @MANV varchar(20)
+with encryption
+as
+begin
+    select MANV, HOTEN, EMAIL, PUBKEY
+    from NHANVIEN
+    where MANV = @MANV;
+end;
+go
+
+create procedure SP_CREATE_NHANVIEN
+    @MANV varchar(20),
+    @HOTEN nvarchar(100),
+    @EMAIL varchar(20),
+    @TENDN varchar(100),
+    @MK varbinary(MAX),
+    @PUB varchar(20)
+with encryption
+as
+begin
+    insert into NHANVIEN (MANV, HOTEN, EMAIL, TENDN, MATKHAU, PUBKEY)
+    values (@MANV, @HOTEN, @EMAIL, @TENDN, @MK, @PUB);
+end;
+go
+
+create procedure SP_UPD_PUBLIC_ENCRYPT_LUONG
+    @MANV varchar(20),
+    @LUONGCB varbinary(MAX)
+with encryption
+as
+begin
+    update NHANVIEN
+    set LUONG = @LUONGCB
+    where MANV = @MANV;
+end;
+go
