@@ -102,6 +102,21 @@ def decrypt_salary(encrypted_salary, mk):
     decrypted_int = pow(encrypted_int, d, n)
     decrypted_bytes = decrypted_int.to_bytes((decrypted_int.bit_length() + 7) // 8, byteorder='big')
     return decrypted_bytes.decode('utf-8')
+
+def encrypt_score(score: float, public_key):
+    n, e = public_key
+    score_str = f"{score:.2f}"
+    score_int = int.from_bytes(score_str.encode('utf-8'), byteorder='big')
+    encrypted_int = pow(score_int, e, n)
+    return encrypted_int.to_bytes((encrypted_int.bit_length() + 7) // 8, byteorder='big')
+
+def decrypt_score(encrypted_score, mk):
+    public_key, private_key = generate_rsa_keys(mk)
+    n, d = private_key
+    encrypted_int = int.from_bytes(encrypted_score, byteorder='big')
+    decrypted_int = pow(encrypted_int, d, n)
+    decrypted_bytes = decrypted_int.to_bytes((decrypted_int.bit_length() + 7) // 8, byteorder='big')
+    return float(decrypted_bytes.decode('utf-8'))
     
 def create_employee(manv, hoten, email, tendn, mk):
     try:
@@ -128,7 +143,10 @@ def get_employee(tendn, mk):
         cursor.execute("SP_SEL_PUBLIC_ENCRYPT_NHANVIEN ?, ?", tendn, mk)
         row = cursor.fetchone()
         if row:
-            decrypted_salary = decrypt_salary(row[3], mk)
+            if row[3] is None:
+                decrypted_salary = None
+            else:
+                decrypted_salary = decrypt_salary(row[3], mk)
             return {
                 "MANV": row[0],
                 "HOTEN": row[1],
@@ -188,8 +206,8 @@ def update_salary(manv, new_salary):
 ''' 
 -- FOR TESTING PURPOSES ONLY --
 
+[Tạo nhân viên mới]
 if __name__ == "__main__":
-    
     manv = "TEST001"
     mk = "test123"
     hoten = "Test Employee 1"
@@ -199,6 +217,17 @@ if __name__ == "__main__":
     update_salary(manv, "15000000")
     employee = get_employee(tendn, mk)
     print(employee)
+
+[Mã hóa và giải mã điểm số]
+if __name__ == "__main__":
+    score = 8.5
+    mk = "test123"
+    public_key, private_key = generate_rsa_keys(mk)
+    encrypted_score = encrypt_score(score, public_key)
+    decrypted_score = decrypt_score(encrypted_score, mk)
+    print(f"Original Score: {score}")
+    print(f"Encrypted Score: {encrypted_score}")
+    print(f"Decrypted Score: {decrypted_score}")
 
 '''
 
@@ -228,5 +257,9 @@ Lưu và load khóa công khai
 Mã hóa và giải mã lương
 - encrypt_salary(salary, public_key): Mã hóa lương bằng khóa công khai
 - decrypt_salary(encrypted_salary, mk): Giải mã lương bằng khóa riêng tư được sinh từ mk
+
+Mã hóa và giải mã điểm số
+- encrypt_score(score, public_key): Mã hóa điểm số bằng khóa công khai
+- decrypt_score(encrypted_score, mk): Giải mã điểm số bằng khóa riêng tư được sinh từ mk
 
 '''

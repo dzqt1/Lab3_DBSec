@@ -3,6 +3,7 @@ from tkinter import messagebox
 import config
 import dashboard
 import pyodbc
+import employeeService as es
 
 def login():
     username = entry_username.get()
@@ -23,28 +24,17 @@ def login():
         return
     
     try:
-        conn = config.get_connection()
-        cursor = conn.cursor()
-        sql = "EXEC SP_SEL_PUBLIC_NHANVIEN ?, ?"
-        cursor.execute(sql, (username, password))
-
-        result = cursor.fetchone()
-
-        if result[0] != None:
-            manv = result[0]
+        employee = es.get_employee(username, password)
+        if employee:
             messagebox.showinfo("Success", "Login successful!")
             root.destroy()
-            dashboard.open(manv, password)
+            dashboard.open(employee["MANV"], password)
         else:
             messagebox.showerror("Error", "Invalid username or password.")
 
     except Exception as e:
         messagebox.showerror("Error", f"An error occurred: {e}")
-    finally:
-        if 'cursor' in locals():
-            cursor.close()
-        if 'conn' in locals():
-            conn.close()
+
 
 def open():
     global root, entry_username, entry_password
