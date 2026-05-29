@@ -46,28 +46,36 @@ def login():
         if 'conn' in locals():
             conn.close()
 
-root = tk.Tk()
-root.title("Login")
-root.geometry("300x200")
-root.eval('tk::PlaceWindow . center')
+def open():
+    global root, entry_username, entry_password
+    root = tk.Tk()
+    root.title("Login")
+    root.geometry("300x250")
+    root.eval('tk::PlaceWindow . center')
 
-lbl_title = tk.Label(root, text="Login", font=("Arial", 16))
-lbl_title.pack(pady=5)
+    lbl_title = tk.Label(root, text="Login", font=("Arial", 16))
+    lbl_title.pack(pady=5)
 
-frame = tk.Frame(root)
-frame.pack(pady=5)
+    frame = tk.Frame(root)
+    frame.pack(pady=5)
 
-lbl_username = tk.Label(frame, text="Username:")
-lbl_username.grid(row=0, column=0, padx=5, pady=10, sticky="e")
-entry_username = tk.Entry(frame)
-entry_username.grid(row=0, column=1, padx=5, pady=10)
+    lbl_username = tk.Label(frame, text="Username:")
+    lbl_username.grid(row=0, column=0, padx=5, pady=10, sticky="e")
+    entry_username = tk.Entry(frame)
+    entry_username.grid(row=0, column=1, padx=5, pady=10)
 
-lbl_password = tk.Label(frame, text="Password:")
-lbl_password.grid(row=1, column=0, padx=5, pady=10, sticky="e")
-entry_password = tk.Entry(frame, show="*")
-entry_password.grid(row=1, column=1, padx=5, pady=10)
+    lbl_password = tk.Label(frame, text="Password:")
+    lbl_password.grid(row=1, column=0, padx=5, pady=10, sticky="e")
+    entry_password = tk.Entry(frame, show="*")
+    entry_password.grid(row=1, column=1, padx=5, pady=10)
 
-login_button = tk.Button(root, text="Login", width=10, command=login)
-login_button.pack(pady=10)
+    login_button = tk.Button(root, text="Login", width=10, command=login)
+    login_button.pack(pady=10)
 
-root.mainloop()
+    register_button = tk.Button(root, text="Register", width=10, command=lambda: [root.destroy(), __import__("register").open()])
+    register_button.pack(pady=5)
+
+    root.mainloop()
+
+if __name__ == "__main__":
+    open()
