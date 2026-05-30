@@ -4,6 +4,7 @@ import config
 import dashboard
 import adminDashboard
 import pyodbc
+import employeeService as es
 
 def login(entry_username, entry_password, root):
     username = entry_username.get()
@@ -24,31 +25,18 @@ def login(entry_username, entry_password, root):
         return
     
     try:
-        conn = config.get_connection()
-        cursor = conn.cursor()
-        sql = "EXEC SP_SEL_PUBLIC_ENCRYPT_NHANVIEN ?, ?"
-        cursor.execute(sql, (username, password))
-
-        result = cursor.fetchone()
-
-        if result[0] != None:
-            manv = result[0]
+        employee = es.get_employee(username, password)
+        if employee:
             messagebox.showinfo("Success", "Login successful!")
             root.destroy()
-            if manv.upper() == "ADMIN":
-                adminDashboard.open_admin(manv)
+            if employee["MANV"].upper() == "ADMIN":
+                adminDashboard.open_admin(employee["MANV"])
             else:
-                dashboard.open(manv, password)
+                dashboard.open(employee["MANV"], password)
         else:
             messagebox.showerror("Error", "Invalid username or password.")
-
     except Exception as e:
         messagebox.showerror("Error", f"An error occurred: {e}")
-    finally:
-        if 'cursor' in locals():
-            cursor.close()
-        if 'conn' in locals():
-            conn.close()
 
 def open_login():
     root = tk.Tk()
@@ -79,3 +67,37 @@ def open_login():
 
 if __name__ == "__main__":
     open_login()
+
+def open():
+    global root, entry_username, entry_password
+    root = tk.Tk()
+    root.title("Login")
+    root.geometry("300x250")
+    root.eval('tk::PlaceWindow . center')
+
+    lbl_title = tk.Label(root, text="Login", font=("Arial", 16))
+    lbl_title.pack(pady=5)
+
+    frame = tk.Frame(root)
+    frame.pack(pady=5)
+
+    lbl_username = tk.Label(frame, text="Username:")
+    lbl_username.grid(row=0, column=0, padx=5, pady=10, sticky="e")
+    entry_username = tk.Entry(frame)
+    entry_username.grid(row=0, column=1, padx=5, pady=10)
+
+    lbl_password = tk.Label(frame, text="Password:")
+    lbl_password.grid(row=1, column=0, padx=5, pady=10, sticky="e")
+    entry_password = tk.Entry(frame, show="*")
+    entry_password.grid(row=1, column=1, padx=5, pady=10)
+
+    login_button = tk.Button(root, text="Login", width=10, command=login)
+    login_button.pack(pady=10)
+
+    register_button = tk.Button(root, text="Register", width=10, command=lambda: [root.destroy(), __import__("register").open()])
+    register_button.pack(pady=5)
+
+    root.mainloop()
+
+if __name__ == "__main__":
+    open()
