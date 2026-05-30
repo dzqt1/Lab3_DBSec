@@ -1,6 +1,133 @@
 USE QLSVNhom;
 GO
+
 -------------------------------------------------------------
+-- Lab 04 --
+-------------------------------------------------------------
+-- c. --
+-- SP thêm mới nhân viên
+create procedure SP_INS_PUBLIC_ENCRYPT_NHANVIEN
+    @MANV varchar(20),
+    @HOTEN nvarchar(100),
+    @EMAIL varchar(20),
+    @LUONGCB varbinary(MAX),
+    @TENDN varchar(100),
+    @MK varbinary(MAX),
+    @PUB varchar(20)
+with encryption
+as
+begin
+    insert into NHANVIEN (MANV, HOTEN, EMAIL, LUONG, TENDN, MATKHAU, PUBKEY)
+    values (@MANV, @HOTEN, @EMAIL, @LUONGCB, @TENDN, @MK, @PUB);
+end;
+go
+
+-- SP truy vấn dữ liệu nhân viên
+create procedure SP_SEL_PUBLIC_ENCRYPT_NHANVIEN
+    @TENDN varchar(20),
+    @MK varchar(MAX)
+with encryption
+as
+begin
+    declare @MK_hashed varbinary(MAX) = HASHBYTES('SHA1', @MK);
+    select MANV, HOTEN, EMAIL, LUONG, PUBKEY
+    from NHANVIEN
+    where TENDN = @TENDN and MATKHAU = @MK_hashed;
+end;
+go
+
+-- d. --
+-- SP lấy thông tin cơ bản của nhân viên
+create procedure SP_SEL_PUBLIC_ENCRYPT_NHANVIEN_BY_MANV
+    @MANV varchar(20)
+with encryption
+as
+begin
+    select MANV, HOTEN, EMAIL, PUBKEY
+    from NHANVIEN
+    where MANV = @MANV;
+end;
+go
+
+
+-- SP Cập nhật lương cho nhân viên
+create procedure SP_UPD_PUBLIC_ENCRYPT_LUONG
+    @MANV varchar(20),
+    @LUONGCB varbinary(MAX)
+with encryption
+as
+begin
+    update NHANVIEN
+    set LUONG = @LUONGCB
+    where MANV = @MANV;
+end;
+go
+
+-- SP Nhập điểm
+create procedure SP_INS_DIEM_CLIENT
+    @MASV varchar(20),
+    @MAHP varchar(20),
+    @DIEM_ENCRYPTED varbinary(MAX)
+as
+begin
+    if exists (select 1 from BANGDIEM where MASV = @MASV and MAHP = @MAHP)
+    begin
+        update BANGDIEM set DIEMTHI = @DIEM_ENCRYPTED 
+        where MASV = @MASV and MAHP = @MAHP;
+    end
+    else
+    begin
+        insert into BANGDIEM (MASV, MAHP, DIEMTHI) values (@MASV, @MAHP, @DIEM_ENCRYPTED);
+    end
+end;
+go
+
+-- SP Lấy điểm của sinh viên
+create procedure SP_SEL_DIEM_BY_SV_CLIENT
+    @MASV varchar(20)
+as
+begin
+    select 
+        hp.MAHP, 
+        hp.TENHP,
+        bd.DIEMTHI -- Trả về varbinary
+    from HOCPHAN hp
+    left join BANGDIEM bd on hp.MAHP = bd.MAHP and bd.MASV = @MASV
+end;
+go
+-- SP Lấy danh sách toàn bộ nhân viên (Dành cho Admin)
+create procedure SP_GET_ALL_NHANVIEN
+as
+begin
+    select MANV, HOTEN, EMAIL, TENDN, PUBKEY, LUONG 
+    from NHANVIEN;
+end;
+go
+
+-- SP Xóa nhân viên
+create procedure SP_DEL_NHANVIEN
+    @MANV varchar(20)
+as
+begin
+    begin try
+        begin tran;
+        -- Gỡ bỏ nhân viên khỏi các lớp đang quản lý
+        update LOP set MANV = NULL where MANV = @MANV;
+        -- Xóa nhân viên
+        delete from NHANVIEN where MANV = @MANV;
+        commit tran;
+    end try
+    begin catch
+        rollback tran;
+        throw;
+    end catch
+end;
+go
+
+-------------------------------------------------------------
+-- Lab 03 --
+-------------------------------------------------------------
+
 -- C. Cấu hình mức độ tương thích để dùng RSA_512
 ALTER DATABASE QLSVNhom SET COMPATIBILITY_LEVEL = 120;
 GO
@@ -294,133 +421,3 @@ begin
 end;
 go
 
--- ** Lab 4 ** --
--- c. --
-create procedure SP_INS_PUBLIC_ENCRYPT_NHANVIEN
-    @MANV varchar(20),
-    @HOTEN nvarchar(100),
-    @EMAIL varchar(20),
-    @LUONGCB varbinary(MAX),
-    @TENDN varchar(100),
-    @MK varbinary(MAX),
-    @PUB varchar(20)
-with encryption
-as
-begin
-    insert into NHANVIEN (MANV, HOTEN, EMAIL, LUONG, TENDN, MATKHAU, PUBKEY)
-    values (@MANV, @HOTEN, @EMAIL, @LUONGCB, @TENDN, @MK, @PUB);
-end;
-go
-
-create procedure SP_SEL_PUBLIC_ENCRYPT_NHANVIEN
-    @TENDN varchar(20),
-    @MK varchar(MAX)
-with encryption
-as
-begin
-    declare @MK_hashed varbinary(MAX) = HASHBYTES('SHA1', @MK);
-    select MANV, HOTEN, EMAIL, LUONG, PUBKEY
-    from NHANVIEN
-    where TENDN = @TENDN and MATKHAU = @MK_hashed;
-end;
-go
-
--- d. --
-create procedure SP_SEL_PUBLIC_ENCRYPT_NHANVIEN_BY_MANV
-    @MANV varchar(20)
-with encryption
-as
-begin
-    select MANV, HOTEN, EMAIL, PUBKEY
-    from NHANVIEN
-    where MANV = @MANV;
-end;
-go
-
-create procedure SP_CREATE_NHANVIEN
-    @MANV varchar(20),
-    @HOTEN nvarchar(100),
-    @EMAIL varchar(20),
-    @TENDN varchar(100),
-    @MK varbinary(MAX),
-    @PUB varchar(20)
-with encryption
-as
-begin
-    insert into NHANVIEN (MANV, HOTEN, EMAIL, TENDN, MATKHAU, PUBKEY)
-    values (@MANV, @HOTEN, @EMAIL, @TENDN, @MK, @PUB);
-end;
-go
-
-create procedure SP_UPD_PUBLIC_ENCRYPT_LUONG
-    @MANV varchar(20),
-    @LUONGCB varbinary(MAX)
-with encryption
-as
-begin
-    update NHANVIEN
-    set LUONG = @LUONGCB
-    where MANV = @MANV;
-end;
-go
-
--- SP Nhập điểm
-create procedure SP_INS_DIEM_CLIENT
-    @MASV varchar(20),
-    @MAHP varchar(20),
-    @DIEM_ENCRYPTED varbinary(MAX)
-as
-begin
-    if exists (select 1 from BANGDIEM where MASV = @MASV and MAHP = @MAHP)
-    begin
-        update BANGDIEM set DIEMTHI = @DIEM_ENCRYPTED 
-        where MASV = @MASV and MAHP = @MAHP;
-    end
-    else
-    begin
-        insert into BANGDIEM (MASV, MAHP, DIEMTHI) values (@MASV, @MAHP, @DIEM_ENCRYPTED);
-    end
-end;
-go
-
--- SP Lấy điểm của sinh viên
-create procedure SP_SEL_DIEM_BY_SV_CLIENT
-    @MASV varchar(20)
-as
-begin
-    select 
-        hp.MAHP, 
-        hp.TENHP,
-        bd.DIEMTHI -- Trả về varbinary
-    from HOCPHAN hp
-    left join BANGDIEM bd on hp.MAHP = bd.MAHP and bd.MASV = @MASV
-end;
-go
--- SP Lấy danh sách toàn bộ nhân viên (Dành cho Admin)
-create procedure SP_GET_ALL_NHANVIEN
-as
-begin
-    select MANV, HOTEN, EMAIL, TENDN, PUBKEY, LUONG 
-    from NHANVIEN;
-end;
-go
-
--- SP Xóa nhân viên
-create procedure SP_DEL_NHANVIEN
-    @MANV varchar(20)
-as
-begin
-    begin try
-        begin tran;
-        -- Gỡ bỏ nhân viên khỏi các lớp đang quản lý
-        update LOP set MANV = NULL where MANV = @MANV;
-        -- Xóa nhân viên
-        delete from NHANVIEN where MANV = @MANV;
-        commit tran;
-    end try
-    begin catch
-        rollback tran;
-        throw;
-    end catch
-end;
-go
