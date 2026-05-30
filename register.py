@@ -20,7 +20,7 @@ def register():
         return
     
     try:
-        es.create_employee(manv, fullname, email, username, password)
+        es.create_employee(manv, fullname, email, username, password, 0)
         messagebox.showinfo("Success", "Registration successful! You can now log in.")
         root.destroy()
         login.open()

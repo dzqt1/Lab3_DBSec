@@ -149,7 +149,7 @@ def get_employee(tendn, mk):
         conn = pyodbc.connect(config.CONNECTION_STRING)
         cursor = conn.cursor()
 
-        cursor.execute("SP_SEL_PUBLIC_ENCRYPT_NHANVIEN ?, ?", tendn, mk)
+        cursor.execute("EXEC SP_SEL_PUBLIC_ENCRYPT_NHANVIEN ?, ?", tendn, mk)
         row = cursor.fetchone()
         if row:
             if row[3] is None:
