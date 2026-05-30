@@ -363,3 +363,64 @@ begin
     where MANV = @MANV;
 end;
 go
+
+-- SP Nhập điểm
+create procedure SP_INS_DIEM_CLIENT
+    @MASV varchar(20),
+    @MAHP varchar(20),
+    @DIEM_ENCRYPTED varbinary(MAX)
+as
+begin
+    if exists (select 1 from BANGDIEM where MASV = @MASV and MAHP = @MAHP)
+    begin
+        update BANGDIEM set DIEMTHI = @DIEM_ENCRYPTED 
+        where MASV = @MASV and MAHP = @MAHP;
+    end
+    else
+    begin
+        insert into BANGDIEM (MASV, MAHP, DIEMTHI) values (@MASV, @MAHP, @DIEM_ENCRYPTED);
+    end
+end;
+go
+
+-- SP Lấy điểm của sinh viên
+create procedure SP_SEL_DIEM_BY_SV_CLIENT
+    @MASV varchar(20)
+as
+begin
+    select 
+        hp.MAHP, 
+        hp.TENHP,
+        bd.DIEMTHI -- Trả về varbinary
+    from HOCPHAN hp
+    left join BANGDIEM bd on hp.MAHP = bd.MAHP and bd.MASV = @MASV
+end;
+go
+-- SP Lấy danh sách toàn bộ nhân viên (Dành cho Admin)
+create procedure SP_GET_ALL_NHANVIEN
+as
+begin
+    select MANV, HOTEN, EMAIL, TENDN, PUBKEY, LUONG 
+    from NHANVIEN;
+end;
+go
+
+-- SP Xóa nhân viên
+create procedure SP_DEL_NHANVIEN
+    @MANV varchar(20)
+as
+begin
+    begin try
+        begin tran;
+        -- Gỡ bỏ nhân viên khỏi các lớp đang quản lý
+        update LOP set MANV = NULL where MANV = @MANV;
+        -- Xóa nhân viên
+        delete from NHANVIEN where MANV = @MANV;
+        commit tran;
+    end try
+    begin catch
+        rollback tran;
+        throw;
+    end catch
+end;
+go

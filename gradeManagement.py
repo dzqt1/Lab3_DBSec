@@ -2,15 +2,14 @@ import tkinter as tk
 from tkinter import ttk, messagebox, simpledialog
 import config
 import pyodbc
+import employeeService
 
 def panel(parent, manv, masv, malop, app_controller, raw_password):
     frame = tk.Frame(parent)
     frame.pack(fill=tk.BOTH, expand=True)
-    global _masv
+    global _masv, _manv, _password
     _masv = masv
-    global _manv
     _manv = manv
-    global _password
     _password = raw_password
 
     tk.Label(frame, text=f"Grades for Student {_masv}", font=("Arial", 14, "bold")).pack(pady=10)
@@ -33,35 +32,51 @@ def on_confirm(tree):
     try:
         conn = pyodbc.connect(config.CONNECTION_STRING)
         cursor = conn.cursor()
+        
+        pub_key = employeeService.load_public_key(f"PUB_{_manv}")
+        
         for item in tree.get_children():
             mamh, tenmh, diem = tree.item(item, "values")
             if diem != "":
-                cursor.execute("EXEC SP_INS_DIEM ?, ?, ?, ?", _masv, mamh, diem, _manv)
+                encrypted_diem = employeeService.encrypt_salary(str(diem), pub_key)
+                
+                cursor.execute("EXEC SP_INS_DIEM_CLIENT ?, ?, ?", _masv, mamh, encrypted_diem)
+                
         conn.commit()
         messagebox.showinfo("Success", "Grades updated successfully!")
     except Exception as e:
         messagebox.showerror("Error", f"Failed to update grades: {e}")
     finally:
-        cursor.close()
-        conn.close()
+        if 'cursor' in locals(): cursor.close()
+        if 'conn' in locals(): conn.close()
 
 def fetch_subjects(tree):
     try:
         conn = pyodbc.connect(config.CONNECTION_STRING)
         cursor = conn.cursor()
-        print(_password)
-        cursor.execute("EXEC SP_SEL_DIEM_BY_SV ?, ?, ?", (_masv, _manv, _password))
+        
+        cursor.execute("EXEC SP_SEL_DIEM_BY_SV_CLIENT ?", (_masv,))
         
         rows = cursor.fetchall()
         tree.delete(*tree.get_children())
+        
         for row in rows:
-            tree.insert("", tk.END, values=(row[0], row[1], row[2]))
+            mamh, tenmh, diem_encrypted = row[0], row[1], row[2]
+            diem_decrypted = ""
+            
+            if diem_encrypted is not None:
+                try:
+                    diem_decrypted = employeeService.decrypt_salary(diem_encrypted, _password)
+                except Exception as e:
+                    diem_decrypted = "Error/Keys Mismatch"
+                    
+            tree.insert("", tk.END, values=(mamh, tenmh, diem_decrypted))
             
     except Exception as e:
         messagebox.showerror("Error", f"Failed to fetch subjects: {e}")
     finally:
-        cursor.close()
-        conn.close()
+        if 'cursor' in locals(): cursor.close()
+        if 'conn' in locals(): conn.close()
 
 def edit_grade(tree):
     selected_item = tree.selection()

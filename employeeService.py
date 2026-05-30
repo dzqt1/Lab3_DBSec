@@ -103,19 +103,28 @@ def decrypt_salary(encrypted_salary, mk):
     decrypted_bytes = decrypted_int.to_bytes((decrypted_int.bit_length() + 7) // 8, byteorder='big')
     return decrypted_bytes.decode('utf-8')
     
-def create_employee(manv, hoten, email, tendn, mk):
+def create_employee(manv, hoten, email, tendn, mk, luong):
     try:
         conn = pyodbc.connect(config.CONNECTION_STRING)
         cursor = conn.cursor()
         
+        # 1. Sinh khóa RSA và lưu file
         public_key, private_key = generate_rsa_keys(mk)
         export_public_key(public_key[0], public_key[1], manv)
+        
+        # 2. Băm mật khẩu (SHA1)
         mk_hashed = hashlib.sha1(mk.encode('utf-8')).digest()
+        
+        # 3. Mã hóa lương ngay bằng Public Key vừa sinh ra
+        encrypted_salary = encrypt_salary(str(luong), public_key)
 
-        cursor.execute("EXEC SP_CREATE_NHANVIEN ?, ?, ?, ?, ?, ?", manv, hoten, email, tendn, mk_hashed, f"PUB_{manv}")
+        # 4. Lưu tất cả vào CSDL (Gọi SP đúng chuẩn của đề bài yêu cầu)
+        cursor.execute("EXEC SP_INS_PUBLIC_ENCRYPT_NHANVIEN ?, ?, ?, ?, ?, ?, ?", 
+                       manv, hoten, email, bytearray(encrypted_salary), tendn, bytearray(mk_hashed), f"PUB_{manv}")
         conn.commit()
     except Exception as e:
         print(f"Error saving employee: {e}")
+        raise e  # Ném lỗi ra để màn hình giao diện (UI) bắt được và hiện thông báo
     finally:
         if 'cursor' in locals(): cursor.close()
         if 'conn' in locals(): conn.close()
@@ -206,7 +215,7 @@ if __name__ == "__main__":
 ** Các hàm sử dụng cho chương trình: **
 
 Cho nhân viên:
-- create_employee(manv, hoten, email, tendn, mk): Tạo nhân viên mới với thông tin đã cho. Lương = null
+- create_employee(manv, hoten, email, tendn, mk): Tạo nhân viên mới với thông tin đã cho.
 - get_employee(tendn, mk): Lấy thông tin nhân viên theo TENDN và MK (bao gồm lương đã giải mã) -> Dùng cho nhân viên xem thông tin cá nhân
 
 Cho admin:

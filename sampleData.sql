@@ -1,40 +1,31 @@
 ﻿USE QLSVNhom
 GO
 
--- 1. Sample Data NHANVIEN
-EXEC SP_INS_PUBLIC_NHANVIEN 
-    @MANV = 'NV01', 
-    @HOTEN = N'Nguyễn A', 
-    @EMAIL = 'nva@hcmus.edu.vn', 
-    @LUONGCB = 3000000, 
-    @TENDN = 'nva', 
-    @MK = 'abcd12';
-
-EXEC SP_INS_PUBLIC_NHANVIEN 
-    @MANV = 'NV02', 
-    @HOTEN = N'Trần Thị B', 
-    @EMAIL = 'ttb@hcmus.edu.vn', 
-    @LUONGCB = 4000000, 
-    @TENDN = 'ttb', 
-    @MK = 'abcd12';
+-- Xóa dữ liệu cũ (Ngoại trừ NHANVIEN đã tạo bằng Python) để tránh lỗi trùng lặp khi chạy nhiều lần
+DELETE FROM BANGDIEM;
+DELETE FROM HOCPHAN;
+DELETE FROM SINHVIEN;
+DELETE FROM LOP;
 GO
 
--- 2. Sample Data LOP
+-- 1. Sample Data LOP
+-- Admin không quản lý lớp nào, NV01 và NV02 quản lý lớp tương ứng
 INSERT INTO LOP (MALOP, TENLOP, MANV)
 VALUES
 ('K21HTTT', N'Hệ thống thông tin K21', 'NV01'),
 ('K21KHMT', N'Khoa học máy tính K21', 'NV02');
 GO
 
--- 3. Sample Data SINHVIEN
+-- 2. Sample Data SINHVIEN
+-- Lưu ý: Mật khẩu ở đây được băm SHA1 trực tiếp để giả lập hành vi băm từ hệ thống
 INSERT INTO SINHVIEN (MASV, HOTEN, NGAYSINH, DIACHI, MALOP, TENDN, MATKHAU)
 VALUES
-('SV01', N'Lê Minh C', '2003-05-15', N'TP.HCM', 'K21HTTT', 'lmc', CONVERT(VARBINARY, 'pass123')),
-('SV02', N'Phạm Thu D', '2003-08-20', N'Đồng Nai', 'K21HTTT', 'ptd', CONVERT(VARBINARY, 'pass456')),
-('SV03', N'Võ Tấn E', '2003-12-10', N'Bình Dương', 'K21KHMT', 'vte', CONVERT(VARBINARY, 'pass789'));
+('SV01', N'Lê Minh C', '2003-05-15', N'TP.HCM', 'K21HTTT', 'lmc', HASHBYTES('SHA1', 'pass123')),
+('SV02', N'Phạm Thu D', '2003-08-20', N'Đồng Nai', 'K21HTTT', 'ptd', HASHBYTES('SHA1', 'pass456')),
+('SV03', N'Võ Tấn E', '2003-12-10', N'Bình Dương', 'K21KHMT', 'vte', HASHBYTES('SHA1', 'pass789'));
 GO
 
--- 4. Sample Data HOCPHAN
+-- 3. Sample Data HOCPHAN
 INSERT INTO HOCPHAN (MAHP, TENHP, SOTC)
 VALUES
 ('HP01', N'An toàn cơ sở dữ liệu', 4),
