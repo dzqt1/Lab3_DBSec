@@ -38,9 +38,13 @@ def on_confirm(tree):
         for item in tree.get_children():
             mamh, tenmh, diem = tree.item(item, "values")
             if diem != "":
-                encrypted_diem = employeeService.encrypt_salary(str(diem), pub_key)
-                
-                cursor.execute("EXEC SP_INS_DIEM_CLIENT ?, ?, ?", _masv, mamh, encrypted_diem)
+                try:
+                    score_float = float(diem)
+                except ValueError:
+                    messagebox.showwarning("Lỗi định dạng", f"Điểm của môn {tenmh} phải là số!")
+                    continue
+                encrypted_diem = employeeService.encrypt_score(score_float, pub_key)
+                cursor.execute("EXEC SP_INS_DIEM_CLIENT ?, ?, ?", _masv, mamh, bytearray(encrypted_diem))
                 
         conn.commit()
         messagebox.showinfo("Success", "Grades updated successfully!")
@@ -66,7 +70,7 @@ def fetch_subjects(tree):
             
             if diem_encrypted is not None:
                 try:
-                    diem_decrypted = employeeService.decrypt_salary(diem_encrypted, _password)
+                    diem_decrypted = employeeService.decrypt_score(diem_encrypted, _password)
                 except Exception as e:
                     diem_decrypted = "Error/Keys Mismatch"
                     
